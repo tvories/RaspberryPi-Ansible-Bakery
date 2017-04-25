@@ -1,0 +1,126 @@
+---
+
+- name: Install ntp
+  apt:
+    name: ntp
+    state: present
+    update_cache: yes
+  tags: ntp
+
+- name: Configure ntp file
+  template:
+    src: ntp.conf.j2
+    dest: /etc/ntp.conf
+    backup: yes
+  tags: ntp
+  notify: restart ntp
+  become: true
+
+- name: Start the ntp service
+  service:
+    name: ntp
+    state: started
+    enabled: yes
+  tags: ntp
+
+- name: Install pip
+  apt: name=python-pip state=present
+
+- name: Install pexpect
+  pip: name=pexpect state=present
+
+- name: Install AD Domain packages
+  apt: name={{ item }} state=present update_cache=yes
+  with_items:
+    - realmd
+    - sssd
+    - adcli
+    - krb5-user
+    - sssd-tools
+    - samba-common
+    - packagekit
+    - samba-common-bin
+    - samba-libs
+
+- name: Copy realmd.conf
+  template: src=realmd.conf.j2 dest=/etc/realmd.conf owner=root group=root mode=0644
+  tags: ad
+
+- name: Copy krb5.conf
+  template: src=krb5.conf.j2 dest=/etc/krb5.conf backup=yes owner=root group=root mode=0644
+  tags: ad
+
+- name: Copy avahi-daemon.conf (Raspbian only!)
+  template:
+    src: avahi-daemon.conf.j2
+    dest: /etc/avahi/avahi-daemon.conf
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644
+  when: ansible_lsb.id == "Raspbian"
+
+- name: Copy nsswitch.conf (Raspbian only!)
+  template:
+    src: nsswitch.conf.j2
+    dest: /etc/nsswitch.conf
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644
+  when: ansible_lsb.id == "Raspbian"
+
+- name: Discover realm
+  command: /bin/bash -c "/usr/sbin/realm discover {{ realm_domain }}"
+  register: realm_discover_results
+  tags: ad
+
+- name: Discover realm debug
+  debug: msg={{ realm_discover_results.stdout }}
+
+- name: Create kerberos ticket
+  expect:
+    command: /bin/bash -c "/usr/bin/kinit -V {{ kerberos_user }}"
+    responses:
+      (?i)Password: "{{ kerberos_user_password }}"
+  tags: ad
+
+# Check for existing AD
+- name: Checking to see if system is already joined to AD
+  command: /bin/bash -c "/usr/sbin/realm list"
+  register: realm_list_results
+  tags: ad
+
+- name: Debug realm_list_results
+  debug: msg={{ realm_list_results.stdout }}
+
+- name: Join system to AD
+  expect:
+    command: /bin/bash -c "/usr/sbin/realm join {{ realm_domain }} --computer-ou='{{ realm_ad_ou }}' --user={{ kerberos_user }}"
+    responses:
+      (?i)Password: "{{ kerberos_user_password }}"
+  ignore_errors: yes
+  when: realm_list_results.stdout == ""
+  become: true
+  tags: ad
+
+- name: Copy suders file for safety
+  command: cp -f /etc/sudoers /etc/sudoers.tmp
+
+- name: Create sudoers file backup
+  command: cp -f /etc/sudoers /etc/sudoers.bak
+
+  # You can change this to any group
+- name: Add group to sudoers
+  lineinfile: dest=/etc/sudoers.tmp state=present line='%domain\ admins ALL=(ALL:ALL) ALL' regexp='^%domain'
+
+- name: Final sudoers file check
+  shell: visudo -q -c -f /etc/sudoers.tmp && cp -f /etc/sudoers.tmp /etc/sudoers
+
+- name: Copy sssd.conf
+  template: src=sssd.conf.j2 dest=/etc/sssd/sssd.conf owner=root group=root mode=0600
+  tags: ad
+
+- name: Copy pam common-session
+  template: src=common-session.j2 dest=/etc/pam.d/common-session owner=root group=root mode=644
+  tags: ad

@@ -1,0 +1,12 @@
+---
+# Change these to match your environment
+
+ntpserver: YourDomainController.domain.local
+# Needs to be in all CAPS
+krb5_default_realm: YOURDOMAIN.LOCAL
+realm_domain: yourdomain.local
+realm_ad_ou: OU=computers,DC=yourdomain,DC=local
+
+# You can pull these variables out into a vault file
+kerberos_user: adjoinuser
+kerberos_user_password: adjoinuserpw

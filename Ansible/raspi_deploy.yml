@@ -1,0 +1,31 @@
+---
+
+# Configures newly deployed raspberry pis
+
+- name: Run initial setup
+  hosts: raspi_deploy
+  become: true
+
+  roles:
+   - raspi_deploy
+
+- name: Run common
+  hosts: raspi_deploy
+  become: true
+          
+  roles:
+   - common
+ 
+- name: Join to domain
+  hosts: raspi_deploy
+  become: true
+
+  roles:
+   - new_deploy
+
+- name: Install updates and reboot
+  hosts: raspi_deploy
+  become: true
+
+  roles:
+   - updates
