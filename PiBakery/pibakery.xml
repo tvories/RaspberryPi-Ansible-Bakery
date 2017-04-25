@@ -1,0 +1,42 @@
+<xml xmlns="http://www.w3.org/1999/xhtml">
+  <block type="onfirstboot" id="onfirstboot" x="16" y="-11">
+    <next>
+      <block type="changepass" id="Lyk?y6p[0#o^%9t4L.}*">
+        <field name="1">DeploymentPassword</field>
+        <next>
+          <block type="sethostname" id="9KJDy;+Qx}%LecHk,@|c">
+            <field name="1">raspideploy.yourdomain.local</field>
+            <next>
+              <block type="wifisetup" id="7,-3DQGkk~-Gah{U^BdC">
+                <field name="1">YourWifiSSID</field>
+                <field name="2">WifiPassword</field>
+                <field name="3">WPA/WPA2</field>
+                <next>
+                  <block type="downloadfile" id="Y:a^yFo7p{B6V-,%QvrG">
+                    <field name="1">http://github.com/tvories/RaspberryPi-Ansible-Bakery/PiBakery/ansible.sh</field>
+                    <field name="2">/home/pi/ansible.sh</field>
+                    <next>
+                      <block type="runcommand" id="WTRN*KY2rq?D6tQ9C7c5">
+                        <field name="1">chmod +x /home/pi/ansible.sh</field>
+                        <field name="2">root</field>
+                        <next>
+                          <block type="runcommand" id="g}jh|nYxHztVvF`ToCwx">
+                            <field name="1">/bin/bash /home/pi/ansible.sh</field>
+                            <field name="2">root</field>
+                            <next>
+                              <block type="reboot" id="e:,)kXZH/qr%EyGHb6*["></block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </next>
+  </block>
+</xml>
